@@ -1,12 +1,16 @@
-version: "2.32.4"
 services:
-  wordpress:
-    image: wordpress:latest  # WordPress with PHP 8
+   wordpress:
+    image: wordpress:latest
     container_name: wordpress
     depends_on:
       - db  # Ensure MariaDB starts first
     ports:
       - "8080:80"  # Access WordPress at http://localhost:8080
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.webapp.rule=Host(`knh.onenex.dev`)"
+      - "traefik.http.routers.webapp.entrypoints=websecure"
+      - "traefik.http.routers.webapp.tls.certresolver=myresolver"
     environment:
       WORDPRESS_DB_HOST: db
       WORDPRESS_DB_USER: wp_user
@@ -16,7 +20,7 @@ services:
       - wordpress_data:/var/www/html
     restart: always
 
-  db:
+   db:
     image: mariadb:latest
     container_name: mariadb
     environment:
