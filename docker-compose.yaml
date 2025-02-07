@@ -1,12 +1,33 @@
-version: "2.32.4"
 services:
-  wordpress:
-    image: wordpress:latest  # WordPress with PHP 8
+   traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    restart: always
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=khantnyarhein@onenex.co"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+
+   wordpress:
+    image: wordpress:latest # WordPress with PHP 8
     container_name: wordpress
     depends_on:
       - db  # Ensure MariaDB starts first
     ports:
       - "80:80"  # Access WordPress at http://localhost:8080
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.webapp.rule=Host(`knh.onenex.dev`)"
+      - "traefik.http.routers.webapp.entrypoints=websecure"
+      - "traefik.http.routers.webapp.tls.certresolver=myresolver"
     environment:
       WORDPRESS_DB_HOST: db
       WORDPRESS_DB_USER: wp_user
@@ -16,7 +37,7 @@ services:
       - wordpress_data:/var/www/html
     restart: always
 
-  db:
+   db:
     image: mariadb:latest
     container_name: mariadb
     environment:
